@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef PINS_H
-#define PINS_H
+#ifndef __PINS_H__
+#define __PINS_H__
 
 #if MB(GEN7_CUSTOM)
   #include "pins_GEN7_CUSTOM.h"
@@ -174,6 +174,8 @@
   #include "pins_MKS_13.h"
 #elif MB(SAINSMART_2IN1)
   #include "pins_SAINSMART_2IN1.h"
+#elif MB(ZRIB_V20)
+  #include "pins_ZRIB_V20.h"
 #else
   #error "Unknown MOTHERBOARD value set in Configuration.h"
 #endif
@@ -568,4 +570,4 @@
   #define SS_PIN   AVR_SS_PIN
 #endif
 
-#endif // __PINS_H
+#endif // __PINS_H__
