@@ -81,8 +81,8 @@
  * Bed leveling type (see: https://github.com/JimBrown/MarlinTarantula/wiki/Bed-leveling-types-(EasyConfig))
  * Must choose one of these other than MANUAL if a Z-Probe type is selected.
  */
-#define TRIPOINT
-//#define LINEAR
+// #define TRIPOINT
+#define LINEAR
 // #define BILINEAR
 // #define UBL
 // #define MANUAL
