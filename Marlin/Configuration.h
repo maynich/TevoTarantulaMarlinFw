@@ -82,9 +82,9 @@
  * Must choose one of these other than MANUAL if a Z-Probe type is selected.
  */
 // #define TRIPOINT
-#define LINEAR
+// #define LINEAR
 // #define BILINEAR
-// #define UBL
+#define UBL
 // #define MANUAL
 
 /**
@@ -93,7 +93,7 @@
  * If you have a dual nozzle the offsets are calculated from the primary nozzle (the one plugged in to E0)
  */
 #define SENSOR_LEFT        0
-#define SENSOR_RIGHT       40
+#define SENSOR_RIGHT       39
 #define SENSOR_FRONT       44
 #define SENSOR_BEHIND      0
 
@@ -101,7 +101,7 @@
  * Number of grid points in each direction
  * Minimum 3. Maximum 15 for UBL. Maximum 7 for MANUAL
  */
-#define GRID_POINTS        3
+#define GRID_POINTS        5
 
 /**
  * Margin around perimiter of bed for probing (will not probe outside this margin)
@@ -1208,7 +1208,7 @@
  * Turn on with the command 'M111 S32'.
  * NOTE: Requires a lot of PROGMEM!
  */
-//#define DEBUG_LEVELING_FEATURE
+#define DEBUG_LEVELING_FEATURE
 
 #if XTRA_BED_BACK > SENSOR_BEHIND
   #define PROBE_Y_FRONT BED_MARGIN + SENSOR_BEHIND - (XTRA_BED_BACK - (XTRA_BED_BACK - SENSOR_BEHIND))
