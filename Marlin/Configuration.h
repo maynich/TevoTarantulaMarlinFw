@@ -106,7 +106,7 @@
 /**
  * Margin around perimiter of bed for probing (will not probe outside this margin)
  */
-#define BED_MARGIN         10
+#define BED_MARGIN         1
 
 /**
  * Servo probe deploy and stow angles
@@ -155,6 +155,13 @@
 #define  bed_Kd 1250.55
 // FIND YOUR OWN: "M303 E-1 C8 S90" to run autotune on the bed at 90 degreesC for 8 cycles.
 // More info here: http://reprap.org/wiki/PID_Tuning
+
+/**
+ * If PID Autotune stops because the temp overshoots the requested S value, enable this and
+ * set the overshoot temp to a value 5 or 10 degrees higher. If the overshoot value is more
+ * than 40 degrees, things may not be ok with your system.
+ */
+//#define MAX_OVERSHOOT_PID_AUTOTUNE 20
 
 /**
  * Enable a custom menu that contains three preheat presets for PLA, ABS and PETG
@@ -291,17 +298,18 @@
 #define STRING_SPLASH_LINE1 SHORT_BUILD_VERSION // will be shown during bootup in line 1
 #define STRING_SPLASH_LINE2 WEBSITE_URL         // will be shown during bootup in line 2
 
-//
-// *** VENDORS PLEASE READ *****************************************************
-//
-// Marlin now allow you to have a vendor boot image to be displayed on machine
-// start. When SHOW_CUSTOM_BOOTSCREEN is defined Marlin will first show your
-// custom boot image and then the default Marlin boot image is shown.
-//
-// We suggest for you to take advantage of this new feature and keep the Marlin
-// boot image unmodified. For an example have a look at the bq Hephestos 2
-// example configuration folder.
-//
+/**
+ * *** VENDORS PLEASE READ ***
+ *
+ * Marlin allows you to add a custom boot image for Graphical LCDs.
+ * With this option Marlin will first show your custom screen followed
+ * by the standard Marlin logo with version number and web URL.
+ *
+ * We encourage you to take advantage of this new feature and we also
+ * respecfully request that you retain the unmodified Marlin boot screen.
+ */
+
+// Enable to show the bitmap in Marlin/_Bootscreen.h on startup.
 //#define SHOW_CUSTOM_BOOTSCREEN
 
 // Enable to show the bitmap in Marlin/_Statusscreen.h on the status screen.
@@ -595,19 +603,19 @@
   // If you are using a pre-configured hotend then you can use one of the value sets by uncommenting it
 
   // Ultimaker
-  //#define  DEFAULT_Kp 22.2
-  //#define  DEFAULT_Ki 1.08
-  //#define  DEFAULT_Kd 114
+  //#define DEFAULT_Kp 22.2
+  //#define DEFAULT_Ki 1.08
+  //#define DEFAULT_Kd 114
 
   // MakerGear
-  //#define  DEFAULT_Kp 7.0
-  //#define  DEFAULT_Ki 0.1
-  //#define  DEFAULT_Kd 12
+  //#define DEFAULT_Kp 7.0
+  //#define DEFAULT_Ki 0.1
+  //#define DEFAULT_Kd 12
 
   // Mendel Parts V9 on 12V
-  //#define  DEFAULT_Kp 63.0
-  //#define  DEFAULT_Ki 2.25
-  //#define  DEFAULT_Kd 440
+  //#define DEFAULT_Kp 63.0
+  //#define DEFAULT_Ki 2.25
+  //#define DEFAULT_Kd 440
 
   // TEVO Tarantula Custom PID Settings
   #define  DEFAULT_Kp hot_Kp
@@ -644,15 +652,15 @@
 
   //120V 250W silicone heater into 4mm borosilicate (MendelMax 1.5+)
   //from FOPDT model - kp=.39 Tp=405 Tdead=66, Tc set to 79.2, aggressive factor of .15 (vs .1, 1, 10)
-  //#define  DEFAULT_bedKp 10.00
-  //#define  DEFAULT_bedKi .023
-  //#define  DEFAULT_bedKd 305.4
+  //#define DEFAULT_bedKp 10.00
+  //#define DEFAULT_bedKi .023
+  //#define DEFAULT_bedKd 305.4
 
   //120V 250W silicone heater into 4mm borosilicate (MendelMax 1.5+)
   //from pidautotune
-  //#define  DEFAULT_bedKp 97.1
-  //#define  DEFAULT_bedKi 1.41
-  //#define  DEFAULT_bedKd 1675.16
+  //#define DEFAULT_bedKp 97.1
+  //#define DEFAULT_bedKi 1.41
+  //#define DEFAULT_bedKd 1675.16
 
   // TEVO Tarantula Custom PID Settings - Heatbed
   #define  DEFAULT_bedKp bed_Kp
@@ -974,6 +982,9 @@
 #define Y_PROBE_OFFSET_FROM_EXTRUDER SENSOR_BEHIND - SENSOR_FRONT // Y offset: -front +behind [the nozzle]
 #define Z_PROBE_OFFSET_FROM_EXTRUDER 0   // Z offset: -below +above  [the nozzle]
 
+// Certain types of probes need to stay away from edges
+#define MIN_PROBE_EDGE 0
+
 // X and Y axis travel speed (mm/m) between probes
 #define XY_PROBE_SPEED 13500
 
@@ -1004,6 +1015,7 @@
  */
 #define Z_CLEARANCE_DEPLOY_PROBE    Z_HOMING_HEIGHT // Z Clearance for Deploy/Stow
 #define Z_CLEARANCE_BETWEEN_PROBES  Z_HOMING_HEIGHT // Z Clearance between probe points
+#define Z_AFTER_PROBING             Z_HOMING_HEIGHT // Z position after probing is done
 
 // For M851 give a range for adjusting the Z probe offset
 #define Z_PROBE_OFFSET_RANGE_MIN -20
@@ -1077,7 +1089,9 @@
 
 //#define NO_MOTION_BEFORE_HOMING  // Inhibit movement until all axes have been homed
 
-//#define Z_HOMING_HEIGHT 5  // (in mm) Minimal z height before homing (G28) for Z clearance above the bed, clamps, ...
+//#define UNKNOWN_Z_NO_RAISE // Don't raise Z (lower the bed) if Z is "unknown." For beds that fall when Z is powered off.
+
+//#define Z_HOMING_HEIGHT 4  // (in mm) Minimal z height before homing (G28) for Z clearance above the bed, clamps, ...
                              // Be sure you have this distance over your Z_MAX_POS in case.
 
 // Direction of endstops when homing; 1=MAX, -1=MIN
@@ -1196,20 +1210,9 @@
 #endif
 
 /**
- * Normally G28 leaves leveling disabled on completion. Enable
- * this option to have G28 restore the prior leveling state.
+ * Added by Jim Brown for EasyConfig use. Does the math to set probe points determined by nozzle,
+ * probe, and bed offsets.
  */
-#if ENABLED(UBL)
-  #define RESTORE_LEVELING_AFTER_G28
-#endif
-
-/**
- * Enable detailed logging of G28, G29, M48, etc.
- * Turn on with the command 'M111 S32'.
- * NOTE: Requires a lot of PROGMEM!
- */
-#define DEBUG_LEVELING_FEATURE
-
 #if XTRA_BED_BACK > SENSOR_BEHIND
   #define PROBE_Y_FRONT BED_MARGIN + SENSOR_BEHIND - (XTRA_BED_BACK - (XTRA_BED_BACK - SENSOR_BEHIND))
 #elif XTRA_BED_BACK > 0 && XTRA_BED_BACK <= SENSOR_BEHIND
@@ -1239,6 +1242,19 @@
   #define PROBE_X_RIGHT X_BED_SIZE - BED_MARGIN - SENSOR_LEFT
 #endif
 #define PROBE_X_MIDDLE (X_BED_SIZE / 2)
+
+/**
+ * Normally G28 leaves leveling disabled on completion. Enable
+ * this option to have G28 restore the prior leveling state.
+ */
+//#define RESTORE_LEVELING_AFTER_G28
+
+/**
+ * Enable detailed logging of G28, G29, M48, etc.
+ * Turn on with the command 'M111 S32'.
+ * NOTE: Requires a lot of PROGMEM!
+ */
+//#define DEBUG_LEVELING_FEATURE
 
 #if ENABLED(MESH_BED_LEVELING) || ENABLED(AUTO_BED_LEVELING_BILINEAR) || ENABLED(AUTO_BED_LEVELING_UBL)
   // Gradually reduce leveling correction until a set height is reached,
@@ -1271,9 +1287,6 @@
   #define GRID_MAX_POINTS_X GRID_POINTS
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
 
-  // The Z probe minimum outer margin (to validate G29 parameters).
-  #define MIN_PROBE_EDGE BED_MARGIN
-
   // Set the boundaries for probing (where the probe can reach).
   #define LEFT_PROBE_BED_POSITION PROBE_X_LEFT
   #define RIGHT_PROBE_BED_POSITION PROBE_X_RIGHT
@@ -1301,33 +1314,17 @@
 
   #endif
 
-#elif ENABLED(AUTO_BED_LEVELING_3POINT)
-
-  // 3 arbitrary points to probe.
-  // A simple cross-product is used to estimate the plane of the bed.
-  #define ABL_PROBE_PT_1_X PROBE_X_LEFT
-  #define ABL_PROBE_PT_1_Y PROBE_Y_FRONT
-  #define ABL_PROBE_PT_2_X PROBE_X_RIGHT
-  #define ABL_PROBE_PT_2_Y PROBE_Y_FRONT
-  #define ABL_PROBE_PT_3_X PROBE_X_MIDDLE
-  #define ABL_PROBE_PT_3_Y PROBE_Y_BACK
-
 #elif ENABLED(AUTO_BED_LEVELING_UBL)
 
   //===========================================================================
   //========================= Unified Bed Leveling ============================
   //===========================================================================
 
-  #define MESH_INSET BED_MARGIN // Mesh inset margin on print area
+  //#define MESH_EDIT_GFX_OVERLAY   // Display a graphics overlay while editing the mesh
+
+  #define MESH_INSET BED_MARGIN     // Set Mesh bounds as an inset region of the bed
   #define GRID_MAX_POINTS_X GRID_POINTS      // Don't use more than 15 points per axis, implementation limited.
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
-
-  #define UBL_PROBE_PT_1_X PROBE_X_LEFT // Probing points for 3-Point leveling of the mesh
-  #define UBL_PROBE_PT_1_Y PROBE_Y_FRONT
-  #define UBL_PROBE_PT_2_X PROBE_X_RIGHT
-  #define UBL_PROBE_PT_2_Y PROBE_Y_FRONT
-  #define UBL_PROBE_PT_3_X PROBE_X_MIDDLE
-  #define UBL_PROBE_PT_3_Y PROBE_Y_BACK
 
   #define UBL_MESH_EDIT_MOVES_Z     // Sophisticated users prefer no movement of nozzle
   #define UBL_SAVE_ACTIVE_ON_M500   // Save the currently active mesh in the current slot on M500
@@ -1341,13 +1338,26 @@
   //=================================== Mesh ==================================
   //===========================================================================
 
-  #define MESH_INSET BED_MARGIN  // Mesh inset margin on print area
+  #define MESH_INSET BED_MARGIN  // Set Mesh bounds as an inset region of the bed
   #define GRID_MAX_POINTS_X GRID_POINTS    // Don't use more than 7 points per axis, implementation limited.
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
 
   //#define MESH_G28_REST_ORIGIN // After homing all axes ('G28' or 'G28 XYZ') rest Z at Z_MIN_POS
 
 #endif // BED_LEVELING
+
+/**
+ * Points to probe for all 3-point Leveling procedures.
+ * Override if the automatically selected points are inadequate.
+ */
+#if ENABLED(AUTO_BED_LEVELING_3POINT) || ENABLED(AUTO_BED_LEVELING_UBL)
+  #define PROBE_PT_1_X PROBE_X_LEFT // Probing points for 3-Point leveling of the mesh
+  #define PROBE_PT_1_Y PROBE_Y_FRONT
+  #define PROBE_PT_2_X PROBE_X_RIGHT
+  #define PROBE_PT_2_Y PROBE_Y_FRONT
+  #define PROBE_PT_3_X PROBE_X_MIDDLE
+  #define PROBE_PT_3_Y PROBE_Y_BACK
+#endif
 
 /**
  * Use the LCD controller for bed leveling
