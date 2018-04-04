@@ -888,10 +888,10 @@ void kill_screen(const char* lcd_msg) {
       // ^ Main
       //
       MENU_BACK(MSG_MAIN);
-      MENU_ITEM(gcode, MSG_BLTOUCH_RESET, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_RESET)));
-      MENU_ITEM(gcode, MSG_BLTOUCH_SELFTEST, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_SELFTEST)));
-      MENU_ITEM(gcode, MSG_BLTOUCH_DEPLOY, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_DEPLOY)));
-      MENU_ITEM(gcode, MSG_BLTOUCH_STOW, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_STOW)));
+      MENU_ITEM(gcode, MSG_BLTOUCH_RESET, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_RESET)));
+      MENU_ITEM(gcode, MSG_BLTOUCH_SELFTEST, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_SELFTEST)));
+      MENU_ITEM(gcode, MSG_BLTOUCH_DEPLOY, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_DEPLOY)));
+      MENU_ITEM(gcode, MSG_BLTOUCH_STOW, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_STOW)));
       END_MENU();
     }
 
@@ -1335,7 +1335,7 @@ void kill_screen(const char* lcd_msg) {
       MENU_ITEM_EDIT(float43, MSG_BED_Z, &mbl.z_offset, -1, 1);
     #endif
     #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float3, MSG_Z_FADE_HEIGHT, &new_z_fade_height, 0.0, 100.0, _lcd_set_z_fade_height);
+      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float62, MSG_Z_FADE_HEIGHT, &new_z_fade_height, 0.0, 100.0, _lcd_set_z_fade_height);
     #endif
     //
     // Nozzle:
@@ -1880,7 +1880,6 @@ void kill_screen(const char* lcd_msg) {
       // Encoder knob or keypad buttons adjust the Z position
       //
       if (encoderPosition) {
-        refresh_cmd_timeout();
         const float z = current_position[Z_AXIS] + float((int32_t)encoderPosition) * (MBL_Z_STEP);
         line_to_z(constrain(z, -(LCD_PROBE_Z_RANGE) * 0.5, (LCD_PROBE_Z_RANGE) * 0.5));
         lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
@@ -2403,7 +2402,6 @@ void kill_screen(const char* lcd_msg) {
       stepper.cleaning_buffer_counter = 0;
       set_current_from_steppers_for_axis(ALL_AXES);
       sync_plan_position();
-      refresh_cmd_timeout();
     }
 
     void _lcd_ubl_output_map_lcd() {
@@ -2418,10 +2416,7 @@ void kill_screen(const char* lcd_msg) {
       if (encoderPosition) {
         step_scaler += (int32_t)encoderPosition;
         x_plot += step_scaler / (ENCODER_STEPS_PER_MENU_ITEM);
-        if (abs(step_scaler) >= ENCODER_STEPS_PER_MENU_ITEM)
-          step_scaler = 0;
-        refresh_cmd_timeout();
-
+        if (abs(step_scaler) >= ENCODER_STEPS_PER_MENU_ITEM) step_scaler = 0;
         encoderPosition = 0;
         lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
       }
@@ -2558,7 +2553,7 @@ void kill_screen(const char* lcd_msg) {
       MENU_ITEM(submenu, MSG_UBL_TOOLS, _lcd_ubl_tools_menu);
       MENU_ITEM(gcode, MSG_UBL_INFO_UBL, PSTR("G29 W"));
       #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float3, MSG_Z_FADE_HEIGHT, &new_z_fade_height, 0.0, 100.0, _lcd_set_z_fade_height);
+        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(float62, MSG_Z_FADE_HEIGHT, &new_z_fade_height, 0.0, 100.0, _lcd_set_z_fade_height);
       #endif
       END_MENU();
     }
@@ -2685,9 +2680,9 @@ void kill_screen(const char* lcd_msg) {
     // BLTouch Self-Test and Reset
     //
     #if ENABLED(BLTOUCH)
-      MENU_ITEM(gcode, MSG_BLTOUCH_SELFTEST, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_SELFTEST)));
+      MENU_ITEM(gcode, MSG_BLTOUCH_SELFTEST, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_SELFTEST)));
       if (!endstops.z_probe_enabled && TEST_BLTOUCH())
-        MENU_ITEM(gcode, MSG_BLTOUCH_RESET, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_RESET)));
+        MENU_ITEM(gcode, MSG_BLTOUCH_RESET, PSTR("M280 P" STRINGIFY(Z_PROBE_SERVO_NR) " S" STRINGIFY(BLTOUCH_RESET)));
     #endif
 
     //
@@ -2903,7 +2898,6 @@ void kill_screen(const char* lcd_msg) {
     if (use_click()) { return lcd_goto_previous_menu_no_defer(); }
     ENCODER_DIRECTION_NORMAL();
     if (encoderPosition && !processing_manual_move) {
-      refresh_cmd_timeout();
 
       // Start with no limits to movement
       float min = current_position[axis] - 1000,

@@ -95,6 +95,8 @@
   #error "SERVO_ENDSTOP_ANGLES is deprecated. Use Z_SERVO_ANGLES instead."
 #elif defined(X_ENDSTOP_SERVO_NR) || defined(Y_ENDSTOP_SERVO_NR)
   #error "X_ENDSTOP_SERVO_NR and Y_ENDSTOP_SERVO_NR are deprecated and should be removed."
+#elif defined(Z_ENDSTOP_SERVO_NR)
+  #error "Z_ENDSTOP_SERVO_NR is now Z_PROBE_SERVO_NR. Please update your configuration."
 #elif defined(DEFAULT_XYJERK)
   #error "DEFAULT_XYJERK is deprecated. Use DEFAULT_XJERK and DEFAULT_YJERK instead."
 #elif defined(XY_TRAVEL_SPEED)
@@ -603,8 +605,8 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 /**
  * Servo deactivation depends on servo endstops, switching nozzle, or switching extruder
  */
-#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_ENDSTOP && !defined(SWITCHING_NOZZLE_SERVO_NR) && !defined(SWITCHING_EXTRUDER_SERVO_NR)
-  #error "Z_ENDSTOP_SERVO_NR, switching nozzle, or switching extruder is required for DEACTIVATE_SERVOS_AFTER_MOVE."
+#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_PROBE && !defined(SWITCHING_NOZZLE_SERVO_NR) && !defined(SWITCHING_EXTRUDER_SERVO_NR)
+  #error "Z_PROBE_SERVO_NR, switching nozzle, or switching extruder is required for DEACTIVATE_SERVOS_AFTER_MOVE."
 #endif
 
 /**
@@ -670,7 +672,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #if 1 < 0 \
   + ENABLED(PROBE_MANUALLY) \
   + ENABLED(FIX_MOUNTED_PROBE) \
-  + (HAS_Z_SERVO_ENDSTOP && DISABLED(BLTOUCH)) \
+  + (HAS_Z_SERVO_PROBE && DISABLED(BLTOUCH)) \
   + ENABLED(BLTOUCH) \
   + ENABLED(SOLENOID_PROBE) \
   + ENABLED(Z_PROBE_ALLEN_KEY) \
@@ -701,11 +703,11 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
   /**
    * NUM_SERVOS is required for a Z servo probe
    */
-  #if HAS_Z_SERVO_ENDSTOP
+  #if HAS_Z_SERVO_PROBE
     #ifndef NUM_SERVOS
-      #error "You must set NUM_SERVOS for a Z servo probe (Z_ENDSTOP_SERVO_NR)."
-    #elif Z_ENDSTOP_SERVO_NR >= NUM_SERVOS
-      #error "Z_ENDSTOP_SERVO_NR must be smaller than NUM_SERVOS."
+      #error "You must set NUM_SERVOS for a Z servo probe (Z_PROBE_SERVO_NR)."
+    #elif Z_PROBE_SERVO_NR >= NUM_SERVOS
+      #error "Z_PROBE_SERVO_NR must be smaller than NUM_SERVOS."
     #endif
   #endif
 
@@ -852,7 +854,9 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 
 #endif
 
-#if !HAS_MESH && ENABLED(G26_MESH_VALIDATION)
+#if HAS_MESH
+  static_assert(DEFAULT_ZJERK > 0.1, "Low DEFAULT_ZJERK values are incompatible with mesh-based leveling.");
+#elif ENABLED(G26_MESH_VALIDATION)
   #error "G26_MESH_VALIDATION requires MESH_BED_LEVELING, AUTO_BED_LEVELING_BILINEAR, or AUTO_BED_LEVELING_UBL."
 #endif
 
@@ -891,15 +895,15 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  */
 #if ENABLED(Z_SAFE_HOMING)
   #if HAS_BED_PROBE
-    #if !WITHIN(Z_SAFE_HOMING_X_POINT, MIN_PROBE_X, MAX_PROBE_X)
-      #error "Z_SAFE_HOMING_X_POINT is outside the probe region."
-    #elif !WITHIN(Z_SAFE_HOMING_Y_POINT, MIN_PROBE_Y, MAX_PROBE_Y)
-      #error "Z_SAFE_HOMING_Y_POINT is outside the probe region."
-    #endif
-  #elif !WITHIN(Z_SAFE_HOMING_X_POINT, X_MIN_POS, X_MAX_POS)
-    #error "Z_SAFE_HOMING_X_POINT can't be reached by the nozzle."
-  #elif !WITHIN(Z_SAFE_HOMING_Y_POINT, Y_MIN_POS, Y_MAX_POS)
-    #error "Z_SAFE_HOMING_Y_POINT can't be reached by the nozzle."
+    static_assert(WITHIN(Z_SAFE_HOMING_X_POINT, MIN_PROBE_X, MAX_PROBE_X),
+      "Z_SAFE_HOMING_X_POINT is outside the probe region.");
+    static_assert(WITHIN(Z_SAFE_HOMING_Y_POINT, MIN_PROBE_Y, MAX_PROBE_Y),
+      "Z_SAFE_HOMING_Y_POINT is outside the probe region.");
+  #else
+    static_assert(WITHIN(Z_SAFE_HOMING_X_POINT, X_MIN_POS, X_MAX_POS),
+      "Z_SAFE_HOMING_X_POINT can't be reached by the nozzle.");
+    static_assert(WITHIN(Z_SAFE_HOMING_Y_POINT, Y_MIN_POS, Y_MAX_POS),
+      "Z_SAFE_HOMING_Y_POINT can't be reached by the nozzle.");
   #endif
 #endif // Z_SAFE_HOMING
 
@@ -1306,6 +1310,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  *       SAV_3DGLCD => U8GLIB_SH1106 => ULTIMAKERCONTROLLER
  *       MKS_12864OLED => U8GLIB_SH1106 => ULTIMAKERCONTROLLER
  *       MKS_12864OLED_SSD1306 => U8GLIB_SSD1306 => ULTIMAKERCONTROLLER
+ *       MKS_MINI_12864 => MINIPANEL
  *       miniVIKI => ULTIMAKERCONTROLLER
  *       VIKI2 => ULTIMAKERCONTROLLER
  *       ELB_FULL_GRAPHIC_CONTROLLER => ULTIMAKERCONTROLLER
@@ -1363,37 +1368,39 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  * Make sure HAVE_TMC26X is warranted
  */
 #if ENABLED(HAVE_TMC26X) && !( \
-         ENABLED(  X_IS_TMC26X ) \
-      || ENABLED( X2_IS_TMC26X ) \
-      || ENABLED(  Y_IS_TMC26X ) \
-      || ENABLED( Y2_IS_TMC26X ) \
-      || ENABLED(  Z_IS_TMC26X ) \
-      || ENABLED( Z2_IS_TMC26X ) \
-      || ENABLED( E0_IS_TMC26X ) \
-      || ENABLED( E1_IS_TMC26X ) \
-      || ENABLED( E2_IS_TMC26X ) \
-      || ENABLED( E3_IS_TMC26X ) \
-      || ENABLED( E4_IS_TMC26X ) \
+         ENABLED( X_IS_TMC26X) \
+      || ENABLED(X2_IS_TMC26X) \
+      || ENABLED( Y_IS_TMC26X) \
+      || ENABLED(Y2_IS_TMC26X) \
+      || ENABLED( Z_IS_TMC26X) \
+      || ENABLED(Z2_IS_TMC26X) \
+      || ENABLED(E0_IS_TMC26X) \
+      || ENABLED(E1_IS_TMC26X) \
+      || ENABLED(E2_IS_TMC26X) \
+      || ENABLED(E3_IS_TMC26X) \
+      || ENABLED(E4_IS_TMC26X) \
   )
   #error "HAVE_TMC26X requires at least one TMC26X stepper to be set."
 #endif
 
 /**
- * Make sure HAVE_TMC2130 is warranted
+ * TMC2130 Requirements
  */
 #if ENABLED(HAVE_TMC2130)
-  #if !( ENABLED(  X_IS_TMC2130 ) \
-      || ENABLED( X2_IS_TMC2130 ) \
-      || ENABLED(  Y_IS_TMC2130 ) \
-      || ENABLED( Y2_IS_TMC2130 ) \
-      || ENABLED(  Z_IS_TMC2130 ) \
-      || ENABLED( Z2_IS_TMC2130 ) \
-      || ENABLED( E0_IS_TMC2130 ) \
-      || ENABLED( E1_IS_TMC2130 ) \
-      || ENABLED( E2_IS_TMC2130 ) \
-      || ENABLED( E3_IS_TMC2130 ) \
-      || ENABLED( E4_IS_TMC2130 ) )
+  #if !( ENABLED( X_IS_TMC2130) \
+      || ENABLED(X2_IS_TMC2130) \
+      || ENABLED( Y_IS_TMC2130) \
+      || ENABLED(Y2_IS_TMC2130) \
+      || ENABLED( Z_IS_TMC2130) \
+      || ENABLED(Z2_IS_TMC2130) \
+      || ENABLED(E0_IS_TMC2130) \
+      || ENABLED(E1_IS_TMC2130) \
+      || ENABLED(E2_IS_TMC2130) \
+      || ENABLED(E3_IS_TMC2130) \
+      || ENABLED(E4_IS_TMC2130) )
     #error "HAVE_TMC2130 requires at least one TMC2130 stepper to be set."
+  #elif TMC2130STEPPER_VERSION < 0x020201
+    #error "Update TMC2130Stepper library to 2.2.1 or newer."
   #elif ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
     #error "Enable STEALTHCHOP to use HYBRID_THRESHOLD."
   #endif
@@ -1446,38 +1453,37 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #endif
 
 /**
- * Make sure HAVE_TMC2208 is warranted
+ * TMC2208 Requirements
  */
-#if ENABLED(HAVE_TMC2208) && !( \
-       ENABLED(  X_IS_TMC2208 ) \
-    || ENABLED( X2_IS_TMC2208 ) \
-    || ENABLED(  Y_IS_TMC2208 ) \
-    || ENABLED( Y2_IS_TMC2208 ) \
-    || ENABLED(  Z_IS_TMC2208 ) \
-    || ENABLED( Z2_IS_TMC2208 ) \
-    || ENABLED( E0_IS_TMC2208 ) \
-    || ENABLED( E1_IS_TMC2208 ) \
-    || ENABLED( E2_IS_TMC2208 ) \
-    || ENABLED( E3_IS_TMC2208 ) )
-  #error "HAVE_TMC2208 requires at least one TMC2208 stepper to be set."
-#endif
-
-/**
- * TMC2208 software UART and ENDSTOP_INTERRUPTS both use pin change interrupts (PCI)
- */
-#if ENABLED(HAVE_TMC2208) && ENABLED(ENDSTOP_INTERRUPTS_FEATURE) && !( \
-       defined(X_HARDWARE_SERIAL ) \
-    || defined(X2_HARDWARE_SERIAL) \
-    || defined(Y_HARDWARE_SERIAL ) \
-    || defined(Y2_HARDWARE_SERIAL) \
-    || defined(Z_HARDWARE_SERIAL ) \
-    || defined(Z2_HARDWARE_SERIAL) \
-    || defined(E0_HARDWARE_SERIAL) \
-    || defined(E1_HARDWARE_SERIAL) \
-    || defined(E2_HARDWARE_SERIAL) \
-    || defined(E3_HARDWARE_SERIAL) \
-    || defined(E4_HARDWARE_SERIAL) )
-  #error "select hardware UART for TMC2208 to use both TMC2208 and ENDSTOP_INTERRUPTS_FEATURE."
+#if ENABLED(HAVE_TMC2208)
+  #if !( ENABLED( X_IS_TMC2208) \
+      || ENABLED(X2_IS_TMC2208) \
+      || ENABLED( Y_IS_TMC2208) \
+      || ENABLED(Y2_IS_TMC2208) \
+      || ENABLED( Z_IS_TMC2208) \
+      || ENABLED(Z2_IS_TMC2208) \
+      || ENABLED(E0_IS_TMC2208) \
+      || ENABLED(E1_IS_TMC2208) \
+      || ENABLED(E2_IS_TMC2208) \
+      || ENABLED(E3_IS_TMC2208) \
+      || ENABLED(E4_IS_TMC2208 ) )
+    #error "HAVE_TMC2208 requires at least one TMC2208 stepper to be set."
+  #elif ENABLED(ENDSTOP_INTERRUPTS_FEATURE) && \  // Software UART and ENDSTOP_INTERRUPTS both use Pin Change interrupts (PCI)
+      !( defined( X_HARDWARE_SERIAL) \
+      || defined(X2_HARDWARE_SERIAL) \
+      || defined( Y_HARDWARE_SERIAL) \
+      || defined(Y2_HARDWARE_SERIAL) \
+      || defined( Z_HARDWARE_SERIAL) \
+      || defined(Z2_HARDWARE_SERIAL) \
+      || defined(E0_HARDWARE_SERIAL) \
+      || defined(E1_HARDWARE_SERIAL) \
+      || defined(E2_HARDWARE_SERIAL) \
+      || defined(E3_HARDWARE_SERIAL) \
+      || defined(E4_HARDWARE_SERIAL) )
+    #error "Select *_HARDWARE_SERIAL to use both TMC2208 and ENDSTOP_INTERRUPTS_FEATURE."
+  #elif TMC2208STEPPER_VERSION < 0x000101
+    #error "Update TMC2130Stepper library to 0.1.1 or newer."
+  #endif
 #endif
 
 #if ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
@@ -1492,17 +1498,17 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  * Make sure HAVE_L6470DRIVER is warranted
  */
 #if ENABLED(HAVE_L6470DRIVER) && !( \
-         ENABLED(  X_IS_L6470 ) \
-      || ENABLED( X2_IS_L6470 ) \
-      || ENABLED(  Y_IS_L6470 ) \
-      || ENABLED( Y2_IS_L6470 ) \
-      || ENABLED(  Z_IS_L6470 ) \
-      || ENABLED( Z2_IS_L6470 ) \
-      || ENABLED( E0_IS_L6470 ) \
-      || ENABLED( E1_IS_L6470 ) \
-      || ENABLED( E2_IS_L6470 ) \
-      || ENABLED( E3_IS_L6470 ) \
-      || ENABLED( E4_IS_L6470 ) \
+         ENABLED( X_IS_L6470) \
+      || ENABLED(X2_IS_L6470) \
+      || ENABLED( Y_IS_L6470) \
+      || ENABLED(Y2_IS_L6470) \
+      || ENABLED( Z_IS_L6470) \
+      || ENABLED(Z2_IS_L6470) \
+      || ENABLED(E0_IS_L6470) \
+      || ENABLED(E1_IS_L6470) \
+      || ENABLED(E2_IS_L6470) \
+      || ENABLED(E3_IS_L6470) \
+      || ENABLED(E4_IS_L6470) \
   )
   #error "HAVE_L6470DRIVER requires at least one L6470 stepper to be set."
 #endif

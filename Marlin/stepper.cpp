@@ -1112,7 +1112,7 @@ void Stepper::init() {
 /**
  * Block until all buffered steps are executed / cleaned
  */
-void Stepper::synchronize() { while (planner.blocks_queued() || cleaning_buffer_counter) idle(); }
+void Stepper::synchronize() { while (planner.has_blocks_queued() || cleaning_buffer_counter) idle(); }
 
 /**
  * Set the stepper positions directly in steps
@@ -1212,7 +1212,7 @@ void Stepper::finish_and_disable() {
 void Stepper::quick_stop() {
   cleaning_buffer_counter = 5000;
   DISABLE_STEPPER_DRIVER_INTERRUPT();
-  while (planner.blocks_queued()) planner.discard_current_block();
+  while (planner.has_blocks_queued()) planner.discard_current_block();
   current_block = NULL;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
   #if ENABLED(ULTRA_LCD)
@@ -1246,21 +1246,21 @@ void Stepper::report_positions() {
              zpos = count_position[Z_AXIS];
   CRITICAL_SECTION_END;
 
-  #if CORE_IS_XY || CORE_IS_XZ || IS_SCARA
+  #if CORE_IS_XY || CORE_IS_XZ || IS_DELTA || IS_SCARA
     SERIAL_PROTOCOLPGM(MSG_COUNT_A);
   #else
     SERIAL_PROTOCOLPGM(MSG_COUNT_X);
   #endif
   SERIAL_PROTOCOL(xpos);
 
-  #if CORE_IS_XY || CORE_IS_YZ || IS_SCARA
+  #if CORE_IS_XY || CORE_IS_YZ || IS_DELTA || IS_SCARA
     SERIAL_PROTOCOLPGM(" B:");
   #else
     SERIAL_PROTOCOLPGM(" Y:");
   #endif
   SERIAL_PROTOCOL(ypos);
 
-  #if CORE_IS_XZ || CORE_IS_YZ
+  #if CORE_IS_XZ || CORE_IS_YZ || IS_DELTA
     SERIAL_PROTOCOLPGM(" C:");
   #else
     SERIAL_PROTOCOLPGM(" Z:");

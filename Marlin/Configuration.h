@@ -212,10 +212,12 @@
 #define XTRA_BED_FRONT    0  // Distance bed can move towards the front past Y = 200 (Y=280 for large bed)
 #define XTRA_BED_BACK     0  // Distance bed can move towards the back past Y = 0
 
-/************************ END OF EASY CONFIG ***************************
-//======================================================================
-// DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!!!!!!!
-//======================================================================
+/*
+ ************************ END OF EASY CONFIG ****************************
+ *======================================================================*
+ * DO NOT EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!!!!!! *
+ *======================================================================*
+ */
 
 /**
  * Marlin 3D Printer Firmware
@@ -926,7 +928,7 @@
  * Z Servo Probe, such as an endstop switch on a rotating arm.
  */
 #if ENABLED(SERVO_PROBE)
-  #define Z_ENDSTOP_SERVO_NR 0   // Defaults to SERVO 0 connector.
+  #define Z_PROBE_SERVO_NR 0   // Defaults to SERVO 0 connector.
   #define Z_SERVO_ANGLES {SERVO_DEPLOY,SERVO_STOW}  // Z Servo Deploy and Stow angles
 #endif
 
